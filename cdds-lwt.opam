@@ -1,6 +1,6 @@
 opam-version: "1.2"
 maintainer:   ["angelo@icorsaro.net" ]
-authors:      "ADLINK ATO"
+authors:      "Angelo Corsaro"
 homepage:     "https://github.com/atolab/ocaml-cdds-lwt"
 bug-reports:  "https://github.com/atolab/ocaml-cdds-lwt/issues/"
 dev-repo:     "https://github.com/atolab/ocaml-cdds-lwt.git"
