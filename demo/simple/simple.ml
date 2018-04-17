@@ -17,7 +17,8 @@ let reader () =
   Lwt_main.run @@ read_data dr
 
 let writer () =
-  let w = Writer.make dp topic in
+  let pub = Publisher.make dp in
+  let w = Writer.make pub topic in
   let rec write_data w n =
     let k = "ocaml" ^ (string_of_int (n mod 10)) in
     let v = "rulez-" ^ (string_of_int n) in
