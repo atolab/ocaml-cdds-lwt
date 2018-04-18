@@ -78,28 +78,55 @@ module Writer = struct
 end
 
 module Reader = struct
-  type t = Cdds.Entity.t Lwt.t
+  type t = {
+    lr: Cdds.Reader.t Lwt.t;
+    r: Cdds.Reader.t;
+    ic: Lwt_unix.file_descr;
+    oc: Unix.file_descr;
+    mutable pending_wait: bool;
+  }
+
 
   let make ?(max_samples=128) ?(policies=Cdds.QosPattern.state) lsub ltopic =
     lsub >>= fun sub ->
     ltopic >>= fun topic ->
-      Lwt.return @@ (Cdds.Reader.make ~max_samples:max_samples ~policies:policies sub topic)
+    let uic, uoc = Unix.pipe () in
+    let ic, oc = Lwt_unix.of_unix_file_descr uic, uoc in
+    let r = (Cdds.Reader.make ~max_samples:max_samples ~policies:policies sub topic) in
+    let res =  {lr = Lwt.return r; r; ic; oc; pending_wait = false} in
+    let listener = function
+      | Cdds.Reader.DataAvailable _ ->
+        if res.pending_wait then
+          begin
+            let bs = Bytes.create 32 in
+            Bytes.set bs 0 'a' ;
+            ignore (Unix.write oc bs 0 1);
+          end
+      | _ -> () in
+    let _ = Cdds.Reader.react r listener in Lwt.return res
 
-  let read ldr = ldr >>= fun dr -> Lwt.return @@ Cdds.Reader.read dr
-  let take ldr = ldr >>= fun dr -> Lwt.return @@ Cdds.Reader.take dr
+  let read ldr = ldr >>= fun dr -> Lwt.return @@ Cdds.Reader.read dr.r
+  let take ldr = ldr >>= fun dr -> Lwt.return @@ Cdds.Reader.take dr.r
 
-  let read_n ldr n = ldr >>= fun dr -> Lwt.return @@  Cdds.Reader.read_n dr n
-  let take_n ldr n = ldr >>= fun dr -> Lwt.return @@  Cdds.Reader.take_n dr n
+  let read_n ldr n = ldr >>= fun dr -> Lwt.return @@  Cdds.Reader.read_n dr.r n
+  let take_n ldr n = ldr >>= fun dr -> Lwt.return @@  Cdds.Reader.take_n dr.r n
 
-  let selective_read sel ldr = ldr >>= fun dr -> Lwt.return @@ Cdds.Reader.selective_read sel dr
-  let selective_take sel ldr = ldr >>= fun dr -> Lwt.return @@ Cdds.Reader.selective_take sel dr
+  let selective_read sel ldr = ldr >>= fun dr -> Lwt.return @@ Cdds.Reader.selective_read sel dr.r
+  let selective_take sel ldr = ldr >>= fun dr -> Lwt.return @@ Cdds.Reader.selective_take sel dr.r
 
   (** sread and stake are run detached to ensure that they don't block the main
   thread *)
-  let sread ldr timeout = ldr >>= fun dr -> lwt_cdds_wrap_2 Cdds.Reader.sread dr timeout
-  let stake ldr timeout = ldr >>= fun dr -> lwt_cdds_wrap_2 Cdds.Reader.stake dr timeout
+  (* let sread ldr timeout = ldr >>= fun dr -> lwt_cdds_wrap_2 Cdds.Reader.sread dr timeout
+     let stake ldr timeout = ldr >>= fun dr -> lwt_cdds_wrap_2 Cdds.Reader.stake dr timeout *)
 
-  let selective_sread sel ldr timeout = ldr >>= fun dr -> lwt_cdds_wrap_3 Cdds.Reader.selective_sread sel dr timeout
-  let selective_stake sel ldr timeout = ldr >>= fun dr -> lwt_cdds_wrap_3 Cdds.Reader.selective_stake sel dr timeout
+  let wait ldr  =
+    let%lwt dr = ldr in
+    dr.pending_wait <- true ;
+    let bs = Bytes.create 32 in
+    let w = Lwt_unix.read dr.ic bs 0 32 in
+    w >>= (fun c -> dr.pending_wait <- false ; Lwt.return c)
+
+  let selective_sread sel ldr timeout = ldr >>= fun dr -> lwt_cdds_wrap_3 Cdds.Reader.selective_sread sel dr.r timeout
+  let selective_stake sel ldr timeout = ldr >>= fun dr -> lwt_cdds_wrap_3 Cdds.Reader.selective_stake sel dr.r timeout
 
 end

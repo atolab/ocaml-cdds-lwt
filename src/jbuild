@@ -7,4 +7,6 @@
   (wrapped     false)
   (modules     (cdds_lwt))
   (flags       (-thread))
-  (libraries   (cdds lwt lwt.unix lwt.preemptive))))
+  (libraries   (cdds lwt lwt.unix lwt.preemptive))
+  (preprocess
+    (pps (lwt.ppx)))))
