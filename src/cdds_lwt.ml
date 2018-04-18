@@ -114,19 +114,28 @@ module Reader = struct
   let selective_read sel ldr = ldr >>= fun dr -> Lwt.return @@ Cdds.Reader.selective_read sel dr.r
   let selective_take sel ldr = ldr >>= fun dr -> Lwt.return @@ Cdds.Reader.selective_take sel dr.r
 
-  (** sread and stake are run detached to ensure that they don't block the main
-  thread *)
-  (* let sread ldr timeout = ldr >>= fun dr -> lwt_cdds_wrap_2 Cdds.Reader.sread dr timeout
-     let stake ldr timeout = ldr >>= fun dr -> lwt_cdds_wrap_2 Cdds.Reader.stake dr timeout *)
 
-  let wait ldr  =
+  let wait ldr =
     let%lwt dr = ldr in
     dr.pending_wait <- true ;
     let bs = Bytes.create 32 in
     let w = Lwt_unix.read dr.ic bs 0 32 in
     w >>= (fun c -> dr.pending_wait <- false ; Lwt.return c)
 
-  let selective_sread sel ldr timeout = ldr >>= fun dr -> lwt_cdds_wrap_3 Cdds.Reader.selective_sread sel dr.r timeout
-  let selective_stake sel ldr timeout = ldr >>= fun dr -> lwt_cdds_wrap_3 Cdds.Reader.selective_stake sel dr.r timeout
+  let wait_w_timeout ldr timeout = Lwt_unix.with_timeout timeout (fun () -> wait ldr)
 
+
+  (** sread and stake are run detached to ensure that they don't block the main
+    thread *)
+  let sread ldr  = ldr >>= fun dr -> wait ldr  >>= (fun _ -> Lwt.return @@ Cdds.Reader.read dr.r)
+  let stake ldr = ldr >>= fun dr -> wait ldr >>= (fun _ -> Lwt.return @@ Cdds.Reader.take dr.r)
+
+  let selective_sread sel ldr timeout =  ldr >>= fun dr -> wait ldr  >>= (fun _ -> Lwt.return @@ Cdds.Reader.selective_read sel dr.r )
+  let selective_stake sel ldr timeout = ldr >>= fun dr -> wait ldr  >>= (fun _ -> Lwt.return @@  Cdds.Reader.selective_take sel dr.r)
+
+  let sread_w_timeout ldr  timeout = ldr >>= fun dr ->  wait_w_timeout ldr timeout  >>= (fun _ -> Lwt.return @@ Cdds.Reader.read dr.r)
+  let stake_w_timeout ldr timeout = ldr >>= fun dr ->  wait_w_timeout ldr timeout >>= (fun _ -> Lwt.return @@ Cdds.Reader.take dr.r)
+
+  let selective_sread_w_timeout sel ldr timeout  =  ldr >>= fun dr -> wait_w_timeout ldr timeout  >>= (fun _ -> Lwt.return @@ Cdds.Reader.selective_read sel dr.r )
+  let selective_stake_w_timeout sel ldr  timeout = ldr >>= fun dr ->  wait_w_timeout ldr timeout >>= (fun _ -> Lwt.return @@  Cdds.Reader.selective_take sel dr.r)
 end

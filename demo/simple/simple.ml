@@ -10,7 +10,7 @@ let reader () =
   let sub = Subscriber.make dp in
   let dr = Reader.make sub topic in
   let rec read_data r =
-    let%lwt data = Cdds_lwt.Reader.sread r Duration.infinity in
+    let%lwt data = Cdds_lwt.Reader.sread r in
     List.iter (fun ((k,v),_) -> let _ = Lwt_io.printf ">>> key: %s, value: %s\n" k (Bytes.to_string v) in ()) data ;
     read_data dr
   in
@@ -24,7 +24,7 @@ let writer () =
     let v = "rulez-" ^ (string_of_int n) in
     let%lwt r = Writer.write_string w k v in
     let _ = Lwt_io.printf "Write %d returned %d\n" n @@ Int32.to_int r in ();
-    Unix.sleepf 0.01;
+    Unix.sleepf 0.1;
     write_data w @@ n - 1
   in
     Lwt_main.run @@ write_data w 10000
