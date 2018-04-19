@@ -17,7 +17,7 @@ build: [
 depends: [
   "jbuilder"
   "cdds"
-  "lwt"
+  "lwt" {<= "3.3.0"}
   "lwt.unix"
   "lwt.preemptive"
 ]
