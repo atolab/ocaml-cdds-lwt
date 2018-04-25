@@ -75,6 +75,9 @@ module Writer = struct
   let write ldw key bs =
     ldw >>= fun dw -> Lwt.return @@ Cdds.Writer.write dw key bs
 
+let write_alloc ldw key bs =
+      ldw >>= fun dw -> Lwt.return @@ Cdds.Writer.write_alloc dw key bs
+
   let write_list ldw ksvs =
     ldw >>= fun dw -> Lwt.return @@ Cdds.Writer.write_list dw ksvs
 end
