@@ -10,16 +10,21 @@ version:"0.1"
 license: "EPL 2"
 
 build: [
- ["jbuilder" "subst"] {pinned}
- ["jbuilder" "build" "-p" name "-j" jobs]
+ ["dune" "subst"] {pinned}
+ ["dune" "-p" name "-j" jobs]
+]
+
+install: [
+  ["dune" "build" "-p" name "@install"]
+  ["dune" "install" name]
 ]
 
 depends: [
-  "jbuilder"
+  "dune"
   "cdds"
-  "lwt" {<= "3.3.0"}
+  "lwt"
   "lwt.unix"
-  "lwt.preemptive"
+  "ppx_lwt"
 ]
 
 available: [ocaml-version >= "4.03.0"]

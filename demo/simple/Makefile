@@ -2,8 +2,8 @@
 
 TARGET=simple.exe
 BUILD_DIR=_build/default
-BUILD1=jbuilder build --dev ${TARGET}
-CLEAN= jbuilder clean
+BUILD1=dune build ${TARGET}
+CLEAN= dune clean
 
 all:
 		${BUILD1}
