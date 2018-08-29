@@ -23,7 +23,6 @@ depends: [
   "dune"
   "cdds"
   "lwt"
-  "lwt.unix"
   "ppx_lwt"
 ]
 
