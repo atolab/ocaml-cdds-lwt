@@ -23,7 +23,7 @@ depends: [
   "dune"
   "cdds"
   "lwt"
-  "ppx_lwt"
+  "lwt_ppx"
 ]
 
 available: [ocaml-version >= "4.03.0"]
